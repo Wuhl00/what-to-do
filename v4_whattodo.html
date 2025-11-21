@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>现在干什么？ / What Should I Do?</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Arial', sans-serif;
+      background-color: #fff;
+      color: #000;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* 语言选择按钮 */
+    .language-switch {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      cursor: pointer;
+      font-size: 24px;
+      color: #555;
+      transition: color 0.3s;
+    }
+
+    .language-switch:hover {
+      color: #000;
+    }
+
+    h1 {
+      font-size: 26px;
+      margin-bottom: 30px;
+      text-align: center;
+      max-width: 80%;
+    }
+
+    .container {
+      position: relative;
+      width: 320px;
+      height: 320px;
+      margin-bottom: 40px;
+    }
+
+    .icon {
+      position: absolute;
+      font-size: 48px;
+      width: 56px;
+      height: 56px;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #000;
+    }
+
+    .thinker {
+      position: absolute;
+      font-size: 48px;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      transition: all 1.5s cubic-bezier(0.6, 0.2, 0.4, 0.8);
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    .spinner-display {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 20px;
+      font-weight: bold;
+      color: #000;
+      background-color: rgba(255, 255, 255, 0.95);
+      padding: 16px 28px;
+      border: 2px solid #000;
+      border-radius: 12px;
+      white-space: nowrap;
+      z-index: 10;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    #stop-btn {
+      position: absolute;
+      bottom: -50px;
+      right: -10px;
+      padding: 8px 14px;
+      font-size: 14px;
+      background-color: #fff;
+      border: 1px solid #000;
+      color: #000;
+      cursor: pointer;
+      z-index: 11;
+      opacity: 0;
+      transition: all 0.3s;
+    }
+
+    #stop-btn.show {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    #stop-btn:hover {
+      background-color: #000;
+      color: #fff;
+    }
+
+    .button-group {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      width: 100%;
+      max-width: 320px;
+      margin-top: 20px;
+      position: relative;
+    }
+
+    button {
+      padding: 14px 20px;
+      font-size: 16px;
+      border: 1px solid #000;
+      background-color: #fff;
+      color: #000;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    button:hover:not(:disabled) {
+      background-color: #000;
+      color: #fff;
+    }
+
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .message {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background-color: rgba(0,0,0,0.9);
+      color: white;
+      padding: 20px;
+      border-radius: 12px;
+      max-width: 85%;
+      text-align: center;
+      z-index: 100;
+      display: none;
+    }
+
+    .input-area {
+      margin-top: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    input[type="text"] {
+      padding: 10px;
+      font-size: 14px;
+      border: 1px solid #ccc;
+      outline: none;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 语言切换按钮 -->
+  <div class="language-switch" id="langToggle">🌐</div>
+
+  <h1 id="title">现在干什么？</h1>
+
+  <div class="container" id="container">
+    <div class="thinker" id="thinker">🤔</div>
+    <div class="spinner-display" id="spinnerDisplay">准备中...</div>
+    <button id="stop-btn">就做这件事了！</button>
+  </div>
+
+  <div class="button-group">
+    <button id="what-btn">干点什么呢 ~</button>
+    <button id="suggest-btn">我有新选项？</button>
+    <button id="contact-btn">联系开发者！</button>
+  </div>
+
+  <div class="message" id="message"></div>
+
+  <script>
+    // 多语言资源
+    const locales = {
+      zh: {
+        title: '现在干什么？',
+        whatBtn: '干点什么呢 ~',
+        stopBtn: '就做这件事了！',
+        suggestBtn: '我有新选项？',
+        contactBtn: '联系开发者！',
+        thinking: '准备中...',
+        received: '已收到您的建议，新选项添加后会通知您！',
+        pleaseInput: '请输入内容哦~',
+        devInfo: '开发者邮箱：hlWu00@163.com，欢迎来邮提供意见或交流 \'◡\' ',
+        options: [
+          "阅读社科财经图书",
+          "学习计算机课程",
+          "背英语单词",
+          "练习英语听力",
+          "冥想5分钟",
+          "有氧运动",
+          "深蹲20下3组",
+          "整理房间或书桌",
+          "整点食物吃吃",
+          "写今日日记",
+          "联系父母或朋友"
+        ],
+        inputPlaceholder: '请输入你想加入的新选项'
+      },
+      en: {
+        title: 'What Should I Do?',
+        whatBtn: 'Spin the Wheel ~',
+        stopBtn: 'I\'ll do this!',
+        suggestBtn: 'Suggest New Option?',
+        contactBtn: 'Contact Developer!',
+        thinking: 'Spinning...',
+        received: 'Thanks for your suggestion! We’ll notify you when added.',
+        pleaseInput: 'Please enter something~',
+        devInfo: 'Developer Email: hlWu00@163.com, feel free to reach out! \'◡\'',
+        options: [
+          "Read social science & finance books",
+          "Learn a programming course",
+          "Memorize English words",
+          "Practice English listening",
+          "Meditate for 5 minutes",
+          "Do cardio exercise",
+          "Squat 20 reps × 3 sets",
+          "Clean room or desk",
+          "Have a snack",
+          "Write today's journal",
+          "Call parents or friends"
+        ],
+        inputPlaceholder: 'Enter your suggested activity'
+      }
+    };
+
+    // 获取元素
+    const langToggle = document.getElementById('langToggle');
+    const titleEl = document.getElementById('title');
+    const whatBtn = document.getElementById('what-btn');
+    const stopBtn = document.getElementById('stop-btn');
+    const suggestBtn = document.getElementById('suggest-btn');
+    const contactBtn = document.getElementById('contact-btn');
+    const spinnerDisplay = document.getElementById('spinnerDisplay');
+    const messageEl = document.getElementById('message');
+    const container = document.getElementById('container');
+    const thinker = document.getElementById('thinker');
+
+    // 当前语言
+    let lang = localStorage.getItem('wti-lang') || 'zh';
+    let currentOptions = [];
+
+    // 设置语言
+    function setLanguage(l) {
+      lang = l;
+      localStorage.setItem('wti-lang', lang);
+      const t = locales[lang];
+
+      titleEl.textContent = t.title;
+      whatBtn.textContent = t.whatBtn;
+      stopBtn.textContent = t.stopBtn;
+      suggestBtn.textContent = t.suggestBtn;
+      contactBtn.textContent = t.contactBtn;
+      spinnerDisplay.textContent = t.thinking;
+
+      currentOptions = [...t.options];
+    }
+
+    // 初始设置语言
+    setLanguage(lang);
+
+    // 切换语言
+    langToggle.addEventListener('click', () => {
+      const newLang = lang === 'zh' ? 'en' : 'zh';
+      setLanguage(newLang);
+    });
+
+    // --- 图标与小人动画 ---
+    const icons = [
+      { emoji: "📘", label: "图书 / Book" },
+      { emoji: "📞", label: "电话 / Call" },
+      { emoji: "🏃", label: "跑步机 / Treadmill" },
+      { emoji: "🍽️", label: "食物 / Food" },
+      { emoji: "🎵", label: "音乐 / Music" },
+      { emoji: "🏠", label: "房子 / Home" }
+    ];
+
+    const outerRadius = 130;
+    const innerRadius = 90;
+    const centerX = 160;
+    const centerY = 160;
+
+    icons.forEach((icon, index) => {
+      const angle = (index / 6) * 2 * Math.PI - Math.PI / 2;
+      const x = centerX + outerRadius * Math.cos(angle);
+      const y = centerY + outerRadius * Math.sin(angle);
+
+      const iconEl = document.createElement('div');
+      iconEl.className = 'icon';
+      iconEl.innerHTML = icon.emoji;
+      iconEl.style.left = `${x}px`;
+      iconEl.style.top = `${y}px`;
+
+      container.appendChild(iconEl);
+    });
+
+    const walkerPositions = icons.map((_, index) => {
+      const angle = (index / 6) * 2 * Math.PI - Math.PI / 2;
+      return {
+        x: centerX + innerRadius * Math.cos(angle),
+        y: centerY + innerRadius * Math.sin(angle)
+      };
+    });
+
+    let currentPosIndex = 0;
+    function startWalking() {
+      setInterval(() => {
+        if (whatBtn.disabled) return;
+        currentPosIndex = (currentPosIndex + 1) % walkerPositions.length;
+        const pos = walkerPositions[currentPosIndex];
+        thinker.style.left = `${pos.x}px`;
+        thinker.style.top = `${pos.y}px`;
+      }, 2200);
+    }
+    startWalking();
+
+    // --- 滚动逻辑 ---
+    let spinInterval;
+    let isSpinning = false;
+
+    whatBtn.addEventListener('click', () => {
+      if (isSpinning) return;
+      isSpinning = true;
+      whatBtn.disabled = true;
+      spinnerDisplay.style.opacity = 1;
+      stopBtn.classList.add('show');
+      const t = locales[lang];
+
+      let currentIndex = 0;
+      spinnerDisplay.textContent = t.options[0];
+
+      spinInterval = setInterval(() => {
+        currentIndex = (currentIndex + 1) % t.options.length;
+        spinnerDisplay.textContent = t.options[currentIndex];
+      }, 80);
+    });
+
+    stopBtn.addEventListener('click', () => {
+      if (!isSpinning) return;
+      clearInterval(spinInterval);
+      isSpinning = false;
+      const finalOption = spinnerDisplay.textContent;
+
+      setTimeout(() => {
+        spinnerDisplay.style.opacity = 0;
+        stopBtn.classList.remove('show');
+        whatBtn.disabled = false;
+        showMessage(`${locales[lang].stopBtn} ${finalOption}`);
+      }, 600);
+    });
+
+    function showMessage(text) {
+      messageEl.textContent = text;
+      messageEl.style.display = 'block';
+      setTimeout(() => {
+        messageEl.style.display = 'none';
+      }, 2500);
+    }
+
+    suggestBtn.addEventListener('click', () => {
+      const t = locales[lang];
+      messageEl.innerHTML = '';
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.placeholder = t.inputPlaceholder;
+      input.style.width = '100%';
+
+      const submitBtn = document.createElement('button');
+      submitBtn.textContent = '✓ ' + t.suggestBtn;
+      submitBtn.style.marginTop = '10px';
+      submitBtn.onclick = () => {
+        if (input.value.trim()) {
+          messageEl.innerHTML = '';
+          messageEl.textContent = t.received;
+          setTimeout(() => messageEl.style.display = 'none', 2000);
+        } else {
+          messageEl.textContent = t.pleaseInput;
+          setTimeout(() => messageEl.style.display = 'none', 2000);
+        }
+      };
+
+      messageEl.appendChild(input);
+      messageEl.appendChild(submitBtn);
+      messageEl.style.display = 'block';
+    });
+
+    contactBtn.addEventListener('click', () => {
+      showMessage(locales[lang].devInfo);
+    });
+  </script>
+</body>
+</html>
